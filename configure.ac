@@ -472,12 +472,6 @@ if test x$enable_aptcc = xyes; then
 
 	PKG_CHECK_MODULES(APPSTREAM, appstream >= 0.11)
 
-	AC_MSG_CHECKING([whether apt is at least at version 1.1])
-	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <apt-pkg/pkgsystem.h>]],
-					  [[_system->ArchitecturesSupported();]])],
-			  AC_MSG_RESULT([yes]),
-			  AC_MSG_FAILURE([need libapt-pkg 1.1 or later]))
-
 	AC_MSG_CHECKING([whether apt supports ddtp])
 	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <apt-pkg/pkgcache.h>]],
 					  [[pkgCache::DescIterator d;]])],
