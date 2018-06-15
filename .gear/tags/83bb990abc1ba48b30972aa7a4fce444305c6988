@@ -1,0 +1,16 @@
+object 9bdb409daf79ac71ed191faaf2635a6daa848ace
+type commit
+tag PACKAGEKIT_1_1_10
+tagger Richard Hughes <richard@hughsie.com> 1524496547 +0100
+
+Release 1.1.10
+-----BEGIN PGP SIGNATURE-----
+
+iQEcBAABAgAGBQJa3fijAAoJEBesuo36lw4XtMEIALzAPivbwiDBogI+LBUcyiHV
+Gd4dCpoeIBmycl0iShYUdGRmVBtzx7ML7S613dPlPmHubA40WqI7USbYG7BgrgHR
+fxyoj/bD8hBgUDpyZctgeXHAjCHkVW3jsQzwVlQP2+1MpPZpx6DnjSYHlJIbgNs/
+mvgVRWv0slZp4gWELMwt05WA/SGe3HV8gjEXKtl8lkOmUT7/KCrfimQVUAcStnJR
++fSjhMENI49gHKp4iMuRQfXsuznMz3N4CKl2zyq0NuhMyxRd7889ApSRupgvappn
+p3udm/pMkqPCoM8X+DxEF4nWq7ynBAzhqIEE+54QbCgGRnIEWVv9pR5a7O8PR44=
+=2gYS
+-----END PGP SIGNATURE-----
