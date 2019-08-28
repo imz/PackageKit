@@ -26,11 +26,29 @@
 #include <pk-backend.h>
 #include <apt-pkg/pkgrecords.h>
 
+/**
+ * This class is meant to show Operation Progress using PackageKit
+ */
+class OpPackageKitProgress : public OpProgress
+{
+public:
+    OpPackageKitProgress(PkBackendJob *job);
+    virtual ~OpPackageKitProgress();
+
+    virtual void Done() override;
+
+protected:
+    virtual void Update() override;
+
+private:
+    PkBackendJob  *m_job;
+};
+
 class pkgProblemResolver;
 class AptCacheFile : public pkgCacheFile
 {
 public:
-    AptCacheFile(PkBackendJob *job);
+    AptCacheFile(PkBackendJob *job, OpPackageKitProgress *progress);
     ~AptCacheFile();
 
     /**
@@ -144,24 +162,7 @@ private:
 
     pkgRecords *m_packageRecords;
     PkBackendJob *m_job;
-};
-
-/**
- * This class is maent to show Operation Progress using PackageKit
- */
-class OpPackageKitProgress : public OpProgress
-{
-public:
-    OpPackageKitProgress(PkBackendJob *job);
-    virtual ~OpPackageKitProgress();
-
-    virtual void Done() override;
-
-protected:
-    virtual void Update() override;
-
-private:
-    PkBackendJob  *m_job;
+    OpPackageKitProgress *m_progress;
 };
 
 #endif // APT_CACHE_FILE_H

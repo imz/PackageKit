@@ -30,9 +30,11 @@
 #include "apt-utils.h"
 #include "apt-messages.h"
 
-AptCacheFile::AptCacheFile(PkBackendJob *job) :
+AptCacheFile::AptCacheFile(PkBackendJob *job,
+                           OpPackageKitProgress *progress) :
     m_packageRecords(0),
-    m_job(job)
+    m_job(job),
+    m_progress(progress)
 {
 }
 
@@ -43,8 +45,7 @@ AptCacheFile::~AptCacheFile()
 
 bool AptCacheFile::Open(bool withLock)
 {
-    OpPackageKitProgress progress(m_job);
-    return pkgCacheFile::Open(progress, withLock);
+    return pkgCacheFile::Open(*m_progress, withLock);
 }
 
 void AptCacheFile::Close()
@@ -62,8 +63,7 @@ void AptCacheFile::Close()
 
 bool AptCacheFile::BuildCaches(bool withLock)
 {
-    OpPackageKitProgress progress(m_job);
-    return pkgCacheFile::BuildCaches(progress, withLock);
+    return pkgCacheFile::BuildCaches(*m_progress, withLock);
 }
 
 bool AptCacheFile::CheckDeps(bool AllowBroken)

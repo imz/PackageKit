@@ -67,9 +67,9 @@ AptIntf::AptIntf(PkBackendJob *job) :
     m_cancel(false),
     m_terminalTimeout(120),
     m_lastSubProgress(0),
-    m_cache(0)
+    m_cache(0),
+    m_progress(OpPackageKitProgress(job))
 {
-    m_cancel = false;
 }
 
 bool AptIntf::init(gchar **localDebs)
@@ -128,7 +128,7 @@ bool AptIntf::init(gchar **localDebs)
     }
 
     // Create the AptCacheFile class to search for packages
-    m_cache = new AptCacheFile(m_job);
+    m_cache = new AptCacheFile(m_job, &m_progress);
 
     int timeout = 10;
     // TODO test this
@@ -1980,6 +1980,8 @@ bool AptIntf::runTransaction(const PkgList &install, const PkgList &remove, cons
 
     // new scope for the ActionGroup
     {
+        m_progress.OverallProgress(0, install.size() + remove.size() + update.size(), 1, "updating");
+        unsigned long long processed_packages = 0;
         for (auto op : { Operation { install, false }, Operation { update, true } }) {
             for (auto autoInst : { false, true }) {
                 for (const pkgCache::VerIterator &verIt : op.list) {
@@ -1989,6 +1991,7 @@ bool AptIntf::runTransaction(const PkgList &install, const PkgList &remove, cons
                     if (!m_cache->tryToInstall(Fix, verIt, BrokenFix, autoInst, op.preserveAuto)) {
                         return false;
                     }
+                    m_progress.Progress(++processed_packages);
                 }
             }
         }
@@ -1999,6 +2002,7 @@ bool AptIntf::runTransaction(const PkgList &install, const PkgList &remove, cons
             }
 
             m_cache->tryToRemove(Fix, verIt);
+            m_progress.Progress(++processed_packages);
         }
 
         // Call the scored problem resolver
@@ -2060,6 +2064,22 @@ bool AptIntf::runTransaction(const PkgList &install, const PkgList &remove, cons
     }
 
     return ret;
+}
+
+void AptIntf::showProgress(const char *nevra,
+                           const aptCallbackType what,
+                           const uint64_t amount,
+                           const uint64_t total,
+                           void *data)
+{
+    OpProgress *progress = (OpProgress *) data;
+    switch (what) {
+    case APTCALLBACK_ELEM_PROGRESS:
+        progress->OverallProgress(amount, total, 1, "Installing updates");
+        break;
+    default:
+        break;
+    }
 }
 
 /**
@@ -2219,99 +2239,8 @@ bool AptIntf::installPackages(PkBitfield flags)
     // Download should be finished by now, changing it's status
     pk_backend_job_set_percentage(m_job, PK_BACKEND_PERCENTAGE_INVALID);
 
-    // we could try to see if this is the case
-    setenv("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", 1);
     _system->UnLock();
 
-    pkgPackageManager::OrderResult res;
-
-    // File descriptors for reading dpkg --status-fd
-    int readFromChildFD[2];
-    if (pipe(readFromChildFD) < 0) {
-        cout << "Failed to create a pipe" << endl;
-        return false;
-    }
-
-    int pty_master;
-    m_child_pid = forkpty(&pty_master, NULL, NULL, NULL);
-    if (m_child_pid == -1) {
-        return false;
-    }
-
-    if (m_child_pid == 0) {
-        //cout << "FORKED: installPackages(): DoInstall" << endl;
-
-        // close pipe we don't need
-        close(readFromChildFD[0]);
-
-        // Change the locale to not get libapt localization
-        setlocale(LC_ALL, "C");
-
-        // Debconf handling
-        const gchar *socket = pk_backend_job_get_frontend_socket(m_job);
-        if ((m_interactive) && (socket != NULL)) {
-            setenv("DEBIAN_FRONTEND", "passthrough", 1);
-            setenv("DEBCONF_PIPE", socket, 1);
-        } else {
-            // we don't have a socket set or are not interactive, let's fallback to noninteractive
-            setenv("DEBIAN_FRONTEND", "noninteractive", 1);
-        }
-
-        const gchar *locale;
-        // Set the LANGUAGE so debconf messages get localization
-        if (locale = pk_backend_job_get_locale(m_job)) {
-            setenv("LANGUAGE", locale, 1);
-            setenv("LANG", locale, 1);
-            //setenv("LANG", "C", 1);
-        }
-
-        // apt will record this in its history.log
-        guint uid = pk_backend_job_get_uid(m_job);
-        if (uid > 0) {
-            gchar buf[16];
-            snprintf(buf, sizeof(buf), "%d", uid);
-            setenv("PACKAGEKIT_CALLER_UID", buf, 1);
-        }
-
-        PkRoleEnum role = pk_backend_job_get_role(m_job);
-        gchar *cmd = g_strdup_printf("packagekit role='%s'", pk_role_enum_to_string(role));
-        _config->Set("CommandLine::AsString", cmd);
-        g_free(cmd);
-
-        // Pass the write end of the pipe to the install function
-        res = PM->DoInstall();
-
-        // dump errors into cerr (pass it to the parent process)
-        _error->DumpErrors();
-
-        // finishes the child process, _exit is used to not
-        // close some parent file descriptors
-        _exit(res);
-    }
-
-    cout << "PARENT process running..." << endl;
-    // make it nonblocking, verry important otherwise
-    // when the child finish we stay stuck.
-    fcntl(readFromChildFD[0], F_SETFL, O_NONBLOCK);
-    fcntl(pty_master, F_SETFL, O_NONBLOCK);
-
-    // init the timer
-    m_lastTermAction = time(NULL);
-    m_startCounting = false;
-
-    // Check if the child died
-    int ret;
-    char masterbuf[1024];
-    while (waitpid(m_child_pid, &ret, WNOHANG) == 0) {
-        // TODO: This is dpkg's raw output. Maybe save it for error-solving?
-        while(read(pty_master, masterbuf, sizeof(masterbuf)) > 0);
-        updateInterface(readFromChildFD[0], pty_master);
-    }
-
-    close(readFromChildFD[0]);
-    close(readFromChildFD[1]);
-    close(pty_master);
-
-    cout << "Parent finished..." << endl;
+    PM->DoInstall(showProgress, &m_progress);
     return true;
 }
