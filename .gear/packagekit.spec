@@ -3,7 +3,7 @@
 Summary:   Package management service
 Name:      packagekit
 Version:   1.1.12
-Release:   alt12
+Release:   alt13
 License:   GPLv2+ and LGPLv2+
 Group:     Other
 URL:       http://www.freedesktop.org/software/PackageKit/
@@ -249,6 +249,11 @@ rm -f %_localstatedir/PackageKit/upgrade_lock ||:
 %python3_sitelibdir_noarch/*
 
 %changelog
+* Tue Oct 15 2019 Oleg Solovyov <mcpain@altlinux.org> 1.1.12-alt13
+- Let user know about offline updating progress through plymouth screen.
+- run posttrans scripts manually after update
+- make sure machine won't reboot before scripts executing
+
 * Mon Oct 14 2019 Aleksei Nikiforov <darktemplar@altlinux.org> 1.1.12-alt12
 - Imported changes from upstream.
 
