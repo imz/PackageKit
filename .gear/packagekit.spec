@@ -212,6 +212,7 @@ rm -f %_localstatedir/PackageKit/upgrade_lock ||:
 %config %_sysconfdir/apt/apt.conf.d/20packagekit
 %_libdir/packagekit-backend/libpk_backend_aptcc.so
 %_datadir/PackageKit/helpers/aptcc
+%_libexecdir/pk-invoke-filetriggers.sh
 
 %files -n lib%name-glib
 %_libdir/*packagekit-glib2.so.*

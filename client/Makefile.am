@@ -87,6 +87,13 @@ pkmon_CFLAGS =						\
 
 if ENABLE_OFFLINE_UPDATE
 
+%.sh: %.sh.in Makefile
+	$(AM_V_GEN)sed -e 's|\@libexecdir\@|$(libexecdir)|' \
+		       -e 's|\@cachedir\@|$(cachedir)|' $< > $@.tmp && mv $@.tmp $@
+
+libexec_SCRIPTS =					\
+	pk-invoke-filetriggers.sh
+
 libexec_PROGRAMS =					\
 	pk-offline-update
 
