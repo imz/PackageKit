@@ -12,5 +12,6 @@ ConditionPathExists=!/var/lib/PackageKit/upgrade_lock
 [Service]
 Type=oneshot
 ExecStart=@libexecdir@/pk-offline-update
+ExecStop=/bin/sh @libexecdir@/pk-invoke-filetriggers.sh
 
 FailureAction=reboot

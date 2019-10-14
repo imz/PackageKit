@@ -10,6 +10,7 @@ URL:       http://www.freedesktop.org/software/PackageKit/
 
 # https://github.com/hughsie/PackageKit.git
 Source: %name-%version.tar
+Source1: pk-invoke-filetriggers.sh
 Patch1: %name-%version-alt.patch
 
 BuildRequires(pre): rpm-build-python3
@@ -142,6 +143,7 @@ rm -rf %buildroot%_datadir/PackageKit/helpers/test_spawn
 rm -f %buildroot%_datadir/PackageKit/pk-upgrade-distro.sh
 
 touch %buildroot%_localstatedir/PackageKit/upgrade_lock
+install %SOURCE1 %buildroot%_libexecdir/
 
 %find_lang PackageKit
 
@@ -212,6 +214,7 @@ rm -f %_localstatedir/PackageKit/upgrade_lock ||:
 %config %_sysconfdir/apt/apt.conf.d/20packagekit
 %_libdir/packagekit-backend/libpk_backend_aptcc.so
 %_datadir/PackageKit/helpers/aptcc
+%_libexecdir/pk-invoke-filetriggers.sh
 
 %files -n lib%name-glib
 %_libdir/*packagekit-glib2.so.*
