@@ -158,7 +158,18 @@ if sd_booted && "$SYSTEMCTL" --version >/dev/null 2>&1; then
 fi
 
 %preun
-%preun_service %name ||:
+SYSTEMCTL=systemctl
+
+[ "$RPM_INSTALL_ARG1" -ge 0 ] 2>/dev/null ||
+        fatal 'RPM_INSTALL_ARG1: invalid or undefined variable'
+
+[ "$RPM_INSTALL_ARG1" -eq 0 ] || exit 0
+
+if sd_booted && "$SYSTEMCTL" --version >/dev/null 2>&1; then
+        "$SYSTEMCTL" --no-reload -q disable "$1.service"
+        chkconfig --del "$1"
+        %_bindir/pkcon quit ||:
+fi
 
 %triggerin -- librpm7
 # only on update of librpm7
