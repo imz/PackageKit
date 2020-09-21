@@ -3,7 +3,7 @@
 Summary:   Package management service
 Name:      packagekit
 Version:   1.1.12
-Release:   alt12
+Release:   alt12.1
 License:   GPLv2+ and LGPLv2+
 Group:     Other
 URL:       http://www.freedesktop.org/software/PackageKit/
@@ -263,6 +263,9 @@ rm -f %_localstatedir/PackageKit/upgrade_lock ||:
 %python3_sitelibdir_noarch/*
 
 %changelog
+* Mon Sep 21 2020 Ivan Zakharyaschev <imz@altlinux.org> 1.1.12-alt12.1
+- Adapted the compiler flags for APT API in apt-0.5.15lorg2-alt72.
+
 * Mon Oct 14 2019 Aleksei Nikiforov <darktemplar@altlinux.org> 1.1.12-alt12
 - Imported changes from upstream.
 
