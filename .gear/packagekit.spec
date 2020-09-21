@@ -266,6 +266,7 @@ rm -f %_localstatedir/PackageKit/upgrade_lock ||:
 - A possible fix for polkit dialogs popping up on background refresh operations
   (https://gitlab.gnome.org/GNOME/gnome-software/-/issues/582#note_1095101 ;
   the only remaining changes in upstream branch PACKAGEKIT_1_1_X as of now).
+- Adapted the compiler flags for APT API in apt-0.5.15lorg2-alt72.
 
 * Thu Jun 17 2021 Ivan Zakharyaschev <imz@altlinux.org> 1.1.13-alt1.p9.1
 - Updated to upstream version 1.1.13 (the latest version in 1_1_X branch).
