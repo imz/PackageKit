@@ -104,7 +104,7 @@ Python3 backend for PackageKit.
 %patch1 -p1
 
 %build
-%add_optflags -std=c++14
+%add_optflags -std=c++17
 %add_optflags -D_FILE_OFFSET_BITS=64
 %define _configure_script ./autogen.sh
 %configure \
