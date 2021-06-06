@@ -1985,7 +1985,7 @@ bool AptIntf::installPackages(PkBitfield flags)
 
     // we could try to see if this is the case
     g_setenv("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", TRUE);
-    _system->UnLock();
+    m_cache->SysLock.Drop();
 
     pkgPackageManager::OrderResult res;
 
