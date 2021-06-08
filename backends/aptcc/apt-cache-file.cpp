@@ -39,7 +39,9 @@ AptCacheFile::AptCacheFile(PkBackendJob *job) :
 
 AptCacheFile::~AptCacheFile()
 {
-    Close();
+    // Clear our extra object (additional to pkgCacheWithDependents).
+    clearPkgRecords();
+    // And the base class destructor clears everything else.
 }
 
 bool AptCacheFile::Open(bool withLock)
@@ -48,17 +50,11 @@ bool AptCacheFile::Open(bool withLock)
     return pkgCacheFile::Open(progress, withLock);
 }
 
-void AptCacheFile::Close()
+void AptCacheFile::clearPkgRecords()
 {
     delete m_packageRecords;
 
     m_packageRecords = 0;
-
-    pkgCacheFile::Close();
-
-    // Discard all errors to avoid a future failure when opening
-    // the package cache
-    _error->Discard();
 }
 
 bool AptCacheFile::BuildCaches(bool withLock)

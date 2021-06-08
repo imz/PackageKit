@@ -42,9 +42,15 @@ public:
     bool Open(bool withLock = false);
 
     /**
-      * Closes the package cache
+      * Clears our extra member object (extends pkgCacheWithDependents idea).
+      *
+      * FIXME: extend pkgCacheWithDependents so that clearCache() clears the
+      * dependent PkgRecords.
       */
-    void Close();
+private:
+    void clearPkgRecords();
+
+public:
 
     /**
       * Build caches
