@@ -60,6 +60,24 @@ bool AptCacheFile::BuildCaches()
     return pkgCacheFile::BuildCaches(progress);
 }
 
+pkgCache* AptCacheFile::GetPkgCache()
+{
+    OpPackageKitProgress progress(m_job);
+    return pkgCacheFile::GetPkgCache(progress);
+}
+
+pkgPolicy* AptCacheFile::GetPolicy()
+{
+    OpPackageKitProgress progress(m_job);
+    return pkgCacheFile::GetPolicy(progress);
+}
+
+pkgDepCache* AptCacheFile::GetDepCache()
+{
+    OpPackageKitProgress progress(m_job);
+    return pkgCacheFile::GetDepCache(progress);
+}
+
 bool AptCacheFile::CheckDeps(bool AllowBroken)
 {
     PkRoleEnum role = pk_backend_job_get_role(m_job);
