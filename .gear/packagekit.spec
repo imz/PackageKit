@@ -3,7 +3,7 @@
 Summary:   Package management service
 Name:      packagekit
 Version:   1.1.13.0.0.5
-Release:   alt1
+Release:   alt2
 License:   GPLv2+ and LGPLv2+
 Group:     Other
 URL:       http://www.freedesktop.org/software/PackageKit/
@@ -262,6 +262,13 @@ rm -f %_localstatedir/PackageKit/upgrade_lock ||:
 %python3_sitelibdir_noarch/*
 
 %changelog
+* Thu Mar  5 2026 Ivan Zakharyaschev <imz@altlinux.org> 1.1.13.0.0.5-alt2
+[backport 1.2.3-alt3 changes]
+- Adapted to changed API in apt-0.5.15lorg2-alt72
+  (pkgCacheFile class in RAII style).
+- This also fixed a memory leak/dangling pointers to the caches.
+  (The old implementation of pkgCacheFile in apt was "wrong".)
+
 * Tue May 28 2024 Ivan Zakharyaschev <imz@altlinux.org> 1.1.13.0.0.5-alt1
 - A possible fix for polkit dialogs popping up on background refresh operations
   (https://gitlab.gnome.org/GNOME/gnome-software/-/issues/582#note_1095101 ;
