@@ -9,6 +9,7 @@ AM_CPPFLAGS =						\
 	$(SQLITE_CFLAGS)				\
 	$(POLKIT_CFLAGS)				\
 	$(PYTHON_CFLAGS)				\
+	$(ELOGIND_CFLAGS)				\
 	$(SYSTEMD_CFLAGS)				\
 	-DPACKAGE_LOCALE_DIR=\"$(localedir)\"		\
 	-DBINDIR=\"$(bindir)\"				\
@@ -104,6 +105,7 @@ packagekit_direct_LDADD =				\
 	$(POLKIT_LIBS)					\
 	$(GIO_LIBS)					\
 	$(ARCHIVE_LIBS)					\
+	$(ELOGIND_LIBS)					\
 	$(SYSTEMD_LIBS)
 
 packagekit_direct_LDFLAGS =				\
@@ -132,6 +134,7 @@ packagekitd_LDADD =					\
 	$(POLKIT_LIBS)					\
 	$(GIO_LIBS)					\
 	$(ARCHIVE_LIBS)					\
+	$(ELOGIND_LIBS)					\
 	$(SYSTEMD_LIBS)
 
 packagekitd_LDFLAGS =					\
@@ -157,6 +160,7 @@ pk_self_test_LDADD =					\
 	$(POLKIT_LIBS)					\
 	$(GIO_LIBS)					\
 	$(ARCHIVE_LIBS)					\
+	$(ELOGIND_LIBS)					\
 	$(SYSTEMD_LIBS)
 
 pk_self_test_CPPFLAGS =					\
