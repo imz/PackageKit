@@ -3,7 +3,7 @@
 Summary:   Package management service
 Name:      packagekit
 Version:   1.2.3
-Release:   alt3
+Release:   alt4
 License:   LGPL-2.1+
 Group:     Other
 URL:       http://www.freedesktop.org/software/PackageKit/
@@ -281,6 +281,14 @@ rm -f %_localstatedir/PackageKit/upgrade_lock ||:
 %python3_sitelibdir_noarch/*
 
 %changelog
+* Mon Jun 28 2021 Oleg Solovyov <mcpain@altlinux.org> 1.2.3-alt4
+- Changes by Oleg Solovyov (mcpain@):
+  + Let user know about offline updating progress through plymouth screen
+  + run posttrans scripts manually after update
+  + make sure machine won't reboot before scripts executing finished
+- Changes by Aleksei Nikiforov (darktemplar@):
+  + Updated packagekit service and scripts to make it compatible with offline updates.
+
 * Wed Jun 16 2021 Ivan Zakharyaschev <imz@altlinux.org> 1.2.3-alt3
 - Adapted to changed API in apt-0.5.15lorg2-alt72
   (pkgCacheFile class in RAII style).
