@@ -497,6 +497,10 @@ pk_transaction_details_cb (PkBackendJob *job,
 	if (size != 0)
 		g_variant_builder_add (&builder, "{sv}", "size",
 				       g_variant_new_uint64 (size));
+	size = pk_details_get_download_size (item);
+	if (size != G_MAXUINT64)
+		g_variant_builder_add (&builder, "{sv}", "download-size",
+				       g_variant_new_uint64 (size));
 
 	g_dbus_connection_emit_signal (transaction->priv->connection,
 				       NULL,
@@ -1026,7 +1030,8 @@ pk_transaction_finished_cb (PkBackendJob *job, PkExitEnum exit_enum, PkTransacti
 	pk_results_set_exit_code (transaction->priv->results, exit_enum);
 
 	/* don't really finish the transaction if we only completed to wait for lock */
-	if (pk_transaction_is_finished_with_lock_required (transaction)) {
+	if (exit_enum != PK_EXIT_ENUM_CANCELLED &&
+	    pk_transaction_is_finished_with_lock_required (transaction)) {
 		/* finish only for the transaction list */
 		g_signal_emit (transaction, signals[SIGNAL_FINISHED], 0);
 		return;
@@ -1145,8 +1150,10 @@ pk_transaction_package_cb (PkBackend *backend,
 {
 	const gchar *role_text;
 	PkInfoEnum info;
+	PkInfoEnum update_severity;
 	const gchar *package_id;
 	const gchar *summary = NULL;
+	guint encoded_value;
 
 	g_return_if_fail (PK_IS_TRANSACTION (transaction));
 	g_return_if_fail (transaction->priv->tid != NULL);
@@ -1206,13 +1213,20 @@ pk_transaction_package_cb (PkBackend *backend,
 			 package_id,
 			 summary);
 	}
+
+	/* Safety checks, that the two values do not interleave, neither overflow */
+	g_assert ((PK_INFO_ENUM_LAST & (~0xFFFF)) == 0);
+
+	update_severity = pk_package_get_update_severity (item);
+	encoded_value = info | (((guint32) update_severity) << 16);
+
 	g_dbus_connection_emit_signal (transaction->priv->connection,
 				       NULL,
 				       transaction->priv->tid,
 				       PK_DBUS_INTERFACE_TRANSACTION,
 				       "Package",
 				       g_variant_new ("(uss)",
-						      info,
+						      encoded_value,
 						      package_id,
 						      summary ? summary : ""),
 				       NULL);
@@ -2256,6 +2270,7 @@ pk_transaction_authorize_actions (PkTransaction *transaction,
 	PkTransactionPrivate *priv = transaction->priv;
 	const gchar *text = NULL;
 	struct AuthorizeActionsData *data = NULL;
+	PolkitCheckAuthorizationFlags flags;
 
 	if (actions->len <= 0) {
 		g_debug ("No authentication required");
@@ -2352,13 +2367,17 @@ pk_transaction_authorize_actions (PkTransaction *transaction,
 		}
 	}
 
+	flags = POLKIT_CHECK_AUTHORIZATION_FLAGS_NONE;
+	if (pk_backend_job_get_interactive (priv->job))
+		flags |= POLKIT_CHECK_AUTHORIZATION_FLAGS_ALLOW_USER_INTERACTION;
+
 	g_debug ("authorizing action %s", action_id);
 	/* do authorization async */
 	polkit_authority_check_authorization (priv->authority,
 					      priv->subject,
 					      action_id,
 					      details,
-					      POLKIT_CHECK_AUTHORIZATION_FLAGS_ALLOW_USER_INTERACTION,
+					      flags,
 					      priv->cancellable,
 					      (GAsyncReadyCallback) pk_transaction_authorize_actions_finished_cb,
 					      data);

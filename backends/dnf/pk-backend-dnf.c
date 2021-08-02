@@ -663,7 +663,8 @@ dnf_utils_create_sack_for_filters (PkBackendJob *job,
 		flags |= DNF_SACK_ADD_FLAG_REMOTE;
 
 	/* only load updateinfo when required */
-	if (pk_backend_job_get_role (job) == PK_ROLE_ENUM_GET_UPDATE_DETAIL)
+	if (pk_backend_job_get_role (job) == PK_ROLE_ENUM_GET_UPDATE_DETAIL ||
+	    pk_backend_job_get_role (job) == PK_ROLE_ENUM_GET_UPDATES)
 		flags |= DNF_SACK_ADD_FLAG_UPDATEINFO;
 
 	/* only use unavailble packages for queries */
@@ -911,19 +912,66 @@ pk_backend_what_provides_decompose (gchar **values, GError **error)
 	return (gchar **) g_ptr_array_free (array, FALSE);
 }
 
-static DnfAdvisory *
-dnf_package_get_advisory (DnfPackage *package)
+static GHashTable *
+pk_backend_dnf_cache_advisories (DnfSack *sack)
 {
+#ifdef HAVE_HY_QUERY_GET_ADVISORY_PKGS
+	g_autoptr(GPtrArray) array = NULL;
+	GHashTable *hash;
+	HyQuery query;
+	guint ii;
+
+	hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify) dnf_advisory_free);
+	query = hy_query_create (sack);
+	array = hy_query_get_advisory_pkgs (query, HY_EQ);
+
+	for (ii = 0; ii < array->len; ii++) {
+		DnfAdvisoryPkg *advpkg = g_ptr_array_index (array, ii);
+		gchar *id;
+
+		id = g_strdup_printf ("%s;%s;%s",
+			dnf_advisorypkg_get_name (advpkg),
+			dnf_advisorypkg_get_evr (advpkg),
+			dnf_advisorypkg_get_arch (advpkg));
+
+		g_hash_table_insert (hash, id, dnf_advisorypkg_get_advisory (advpkg));
+	}
+
+	hy_query_free (query);
+	return hash;
+#else
+	return NULL;
+#endif
+}
+
+static DnfAdvisory *
+pk_backend_dnf_get_advisory (GHashTable *advisories_hash,
+			     DnfPackage *pkg)
+{
+#ifdef HAVE_HY_QUERY_GET_ADVISORY_PKGS
+	g_autofree gchar *id = NULL;
+
+	if (pkg == NULL)
+		return NULL;
+
+	id = g_strdup_printf ("%s;%s;%s",
+		dnf_package_get_name (pkg),
+		dnf_package_get_evr (pkg),
+		dnf_package_get_arch (pkg));
+
+	return g_hash_table_lookup (advisories_hash, id);
+#else
 	GPtrArray *advisorylist;
 	DnfAdvisory *advisory = NULL;
 
-	advisorylist = dnf_package_get_advisories (package, HY_EQ);
+	advisorylist = dnf_package_get_advisories (pkg, HY_EQ);
 
 	if (advisorylist->len > 0)
 		advisory = g_steal_pointer (&g_ptr_array_index (advisorylist, 0));
 	g_ptr_array_unref (advisorylist);
 
 	return advisory;
+#endif
 }
 
 static void
@@ -932,6 +980,7 @@ pk_backend_search_thread (PkBackendJob *job, GVariant *params, gpointer user_dat
 	gboolean ret;
 	DnfDb *db;
 	DnfState *state_local;
+	DnfGoalActions flags;
 	GPtrArray *installs = NULL;
 	GPtrArray *pkglist = NULL;
 	HyQuery query = NULL;
@@ -1028,7 +1077,10 @@ pk_backend_search_thread (PkBackendJob *job, GVariant *params, gpointer user_dat
 		} else {
 			hy_goal_upgrade_all (job_data->goal);
 		}
-		ret = dnf_goal_depsolve (job_data->goal, DNF_ALLOW_UNINSTALL, &error);
+		flags = DNF_ALLOW_UNINSTALL;
+		if (!dnf_context_get_install_weak_deps ())
+			flags |= DNF_IGNORE_WEAK_DEPS;
+		ret = dnf_goal_depsolve (job_data->goal, flags, &error);
 		if (!ret) {
 			pk_backend_job_error_code (job, error->code, "%s", error->message);
 			goto out;
@@ -1081,19 +1133,23 @@ pk_backend_search_thread (PkBackendJob *job, GVariant *params, gpointer user_dat
 		goto out;
 	}
 
-	/* FIXME: actually get the right update severity */
 	if (pk_backend_job_get_role (job) == PK_ROLE_ENUM_GET_UPDATES) {
 		guint i;
 		DnfPackage *pkg;
 		DnfAdvisory *advisory;
 		DnfAdvisoryKind kind;
 		PkInfoEnum info_enum;
+		g_autoptr(GHashTable) advisories_hash = pk_backend_dnf_cache_advisories (sack);
 		for (i = 0; i < pkglist->len; i++) {
 			pkg = g_ptr_array_index (pkglist, i);
-			advisory = dnf_package_get_advisory (pkg);
+			advisory = pk_backend_dnf_get_advisory (advisories_hash, pkg);
 			if (advisory != NULL) {
 				kind = dnf_advisory_get_kind (advisory);
+				g_object_set_data (G_OBJECT (pkg), PK_DNF_UPDATE_SEVERITY_KEY,
+					GUINT_TO_POINTER (dnf_update_severity_to_enum (dnf_advisory_get_severity (advisory))));
+#ifndef HAVE_HY_QUERY_GET_ADVISORY_PKGS
 				dnf_advisory_free (advisory);
+#endif
 				info_enum = dnf_advisory_kind_to_info_enum (kind);
 				dnf_package_set_info (pkg, info_enum);
 			}
@@ -1915,14 +1971,15 @@ backend_get_details_thread (PkBackendJob *job, GVariant *params, gpointer user_d
 		pkg = g_hash_table_lookup (hash, package_ids[i]);
 		if (pkg == NULL)
 			continue;
-		pk_backend_job_details (job,
-					package_ids[i],
-					dnf_package_get_summary (pkg),
-					dnf_package_get_license (pkg),
-					PK_GROUP_ENUM_UNKNOWN,
-					dnf_package_get_description (pkg),
-					dnf_package_get_url (pkg),
-					(gulong) dnf_package_get_size (pkg));
+		pk_backend_job_details_full (job,
+					     package_ids[i],
+					     dnf_package_get_summary (pkg),
+					     dnf_package_get_license (pkg),
+					     PK_GROUP_ENUM_UNKNOWN,
+					     dnf_package_get_description (pkg),
+					     dnf_package_get_url (pkg),
+					     (gulong) dnf_package_get_installsize (pkg),
+					     dnf_package_is_downloaded (pkg) ? 0 : dnf_package_get_downloadsize (pkg));
 	}
 
 	/* done */
@@ -2003,14 +2060,15 @@ backend_get_details_local_thread (PkBackendJob *job, GVariant *params, gpointer 
 							   full_paths[i]);
 				return;
 			}
-			pk_backend_job_details (job,
-						dnf_package_get_package_id (pkg),
-						dnf_package_get_summary (pkg),
-						dnf_package_get_license (pkg),
-						PK_GROUP_ENUM_UNKNOWN,
-						dnf_package_get_description (pkg),
-						dnf_package_get_url (pkg),
-						(gulong) dnf_package_get_size (pkg));
+			pk_backend_job_details_full (job,
+						     dnf_package_get_package_id (pkg),
+						     dnf_package_get_summary (pkg),
+						     dnf_package_get_license (pkg),
+						     PK_GROUP_ENUM_UNKNOWN,
+						     dnf_package_get_description (pkg),
+						     dnf_package_get_url (pkg),
+						     (gulong) dnf_package_get_installsize (pkg),
+						     dnf_package_is_downloaded (pkg) ? 0 : dnf_package_get_downloadsize (pkg));
 		}
 	}
 
@@ -2541,6 +2599,7 @@ pk_backend_transaction_run (PkBackendJob *job,
 			    GError **error)
 {
 	DnfState *state_local;
+	DnfGoalActions dnf_flags = DNF_ALLOW_UNINSTALL;
 	PkBackendDnfJobData *job_data = pk_backend_job_get_user_data (job);
 	gboolean ret = TRUE;
 	/* allow downgrades for all transaction types */
@@ -2569,6 +2628,15 @@ pk_backend_transaction_run (PkBackendJob *job,
 	dnf_transaction_set_flags (job_data->transaction, flags);
 
 	state_local = dnf_state_get_child (state);
+
+	/* we solve the goal ourselves, so we can deal with flags */
+	dnf_transaction_set_dont_solve_goal (job_data->transaction, TRUE);
+	if (!dnf_context_get_install_weak_deps ())
+		dnf_flags |= DNF_IGNORE_WEAK_DEPS;
+	ret = dnf_goal_depsolve (job_data->goal, dnf_flags, error);
+	if (!ret)
+		return FALSE;
+
 	ret = dnf_transaction_depsolve (job_data->transaction,
 					job_data->goal,
 					state_local,
@@ -3680,6 +3748,7 @@ pk_backend_get_update_detail_thread (PkBackendJob *job, GVariant *params, gpoint
 	g_autoptr(DnfSack) sack = NULL;
 	g_autoptr(GError) error = NULL;
 	g_autoptr(GHashTable) hash = NULL;
+	g_autoptr(GHashTable) advisories_hash = NULL;
 
 	/* set state */
 	ret = dnf_state_set_steps (job_data->state, NULL,
@@ -3722,6 +3791,8 @@ pk_backend_get_update_detail_thread (PkBackendJob *job, GVariant *params, gpoint
 		return;
 	}
 
+	advisories_hash = pk_backend_dnf_cache_advisories (sack);
+
 	/* emit details for each */
 	for (i = 0; package_ids[i] != NULL; i++) {
 		g_autoptr(GPtrArray) vendor_urls = NULL;
@@ -3731,7 +3802,7 @@ pk_backend_get_update_detail_thread (PkBackendJob *job, GVariant *params, gpoint
 		pkg = g_hash_table_lookup (hash, package_ids[i]);
 		if (pkg == NULL)
 			continue;
-		advisory = dnf_package_get_advisory (pkg);
+		advisory = pk_backend_dnf_get_advisory (advisories_hash, pkg);
 		if (advisory == NULL)
 			continue;
 
@@ -3783,7 +3854,9 @@ pk_backend_get_update_detail_thread (PkBackendJob *job, GVariant *params, gpoint
 					      NULL /* updated */);
 
 		g_ptr_array_unref (references);
+#ifndef HAVE_HY_QUERY_GET_ADVISORY_PKGS
 		dnf_advisory_free (advisory);
+#endif
 	}
 
 	/* done */
