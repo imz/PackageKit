@@ -1,7 +1,7 @@
 /* apt-utils.cpp
  *
  * Copyright (c) 2009 Daniel Nicoletti <dantti12@gmail.com>
- * Copyright (c) 2014 Matthias Klumpp <mak@debian.org>
+ * Copyright (c) 2014-2022 Matthias Klumpp <mak@debian.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -221,7 +221,7 @@ string fetchChangelogData(AptCacheFile &CacheFile,
         if (starts_with(line, "  "))
             line.erase(0,1);
         // no need to free str later, it is allocated in a static buffer
-        const char *str = utf8(line.c_str());
+        const char *str = toUtf8(line.c_str());
         if (strcmp(str, "") == 0) {
             changelog.append("\n");
             continue;
@@ -395,9 +395,10 @@ bool starts_with(const string &str, const char *start)
 bool utilRestartRequired(const string &packageName)
 {
     if (starts_with(packageName, "linux-image-") ||
-            starts_with(packageName, "nvidia-") ||
-            packageName == "libc6" ||
-            packageName == "dbus") {
+        starts_with(packageName, "nvidia-") ||
+        packageName == "libc6" ||
+        packageName == "dbus" ||
+        packageName == "dbus-broker") {
         return true;
     }
     return false;
@@ -405,11 +406,11 @@ bool utilRestartRequired(const string &packageName)
 
 string utilBuildPackageOriginId(pkgCache::VerFileIterator vf)
 {
-    if (vf.File().Origin() == NULL)
+    if (vf.File().Origin() == nullptr)
         return string("local");
-    if (vf.File().Archive() == NULL)
+    if (vf.File().Archive() == nullptr)
         return string("local");
-    if (vf.File().Component() == NULL)
+    if (vf.File().Component() == nullptr)
         return string("invalid");
 
     // https://wiki.debian.org/DebianRepository/Format
@@ -440,9 +441,9 @@ string utilBuildPackageOriginId(pkgCache::VerFileIterator vf)
        // Sanitize it!
        // All space characters, control characters and punctuation get replaced
        // with underscore.
-       // In particular the punctuations ',' and ';' may be used as list separators
-       // so we must not have them appear in our package_ids as that would break
-       // any number of higher level features.
+       // In particular the punctuations ':', ';' and ',' may be used as list separators
+       // so we must not have them appear in our package_ids as that would cause
+       // breakage down the line.
        std::transform(origin.begin(), origin.end(), origin.begin(), ::tolower);
        origin = std::regex_replace(origin, std::regex("[[:space:][:cntrl:][:punct:]]+"), "_");
 
@@ -458,37 +459,14 @@ string utilBuildPackageOriginId(pkgCache::VerFileIterator vf)
     return res;
 }
 
-gchar* utilBuildPackageId(const pkgCache::VerIterator &ver)
+const char *toUtf8(const char *str)
 {
-    gchar *package_id;
-    pkgCache::VerFileIterator vf = ver.FileList();
-
-    string data = "";
-    const pkgCache::PkgIterator &pkg = ver.ParentPkg();
-    if (pkg->CurrentState == pkgCache::State::Installed && pkg.CurrentVer() == ver) {
-        // when a package is installed, the data part of a package-id is "installed:<repo-id>"
-        data = "installed:" + utilBuildPackageOriginId(vf);
-    } else {
-        data = utilBuildPackageOriginId(vf);
-    }
-
-    package_id = pk_package_id_build(ver.ParentPkg().Name(),
-                                     ver.VerStr(),
-                                     ver.Arch(),
-                                     data.c_str());
-    return package_id;
-}
-
-const char *utf8(const char *str)
-{
-    static char *_str = NULL;
-    if (str == NULL) {
+    static __thread char *_str = NULL;
+    if (str == NULL)
         return NULL;
-    }
 
-    if (g_utf8_validate(str, -1, NULL) == true) {
+    if (g_utf8_validate(str, -1, NULL) == true)
         return str;
-    }
 
     g_free(_str);
     _str = NULL;

@@ -152,7 +152,8 @@ public:
       */
     void emitPackages(PkgList &output,
                       PkBitfield filters = PK_FILTER_ENUM_NONE,
-                      PkInfoEnum state = PK_INFO_ENUM_UNKNOWN);
+                      PkInfoEnum state = PK_INFO_ENUM_UNKNOWN,
+                      bool multiversion = false);
 
     void emitRequireRestart(PkgList &output);
 
@@ -233,7 +234,7 @@ private:
     /**
      *  interprets dpkg status fd
      */
-    void updateInterface(int readFd, int writeFd);
+    void updateInterface(int readFd, int writeFd, bool *errorEmitted = nullptr);
     PkgList checkChangedPackages(bool emitChanged);
     pkgCache::VerIterator findTransactionPackage(const std::string &name);
 

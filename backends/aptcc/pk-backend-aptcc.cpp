@@ -206,8 +206,8 @@ static void backend_depends_on_or_requires_thread(PkBackendJob *job, GVariant *p
             return;
         }
 
-        const pkgCache::VerIterator &ver = apt->aptCacheFile()->resolvePkgID(pi);
-        if (ver.end()) {
+        const PkgInfo &pkInfo = apt->aptCacheFile()->resolvePkgID(pi);
+        if (pkInfo.ver.end()) {
             pk_backend_job_error_code(job,
                                       PK_ERROR_ENUM_PACKAGE_NOT_FOUND,
                                       "Couldn't find package %s",
@@ -216,9 +216,9 @@ static void backend_depends_on_or_requires_thread(PkBackendJob *job, GVariant *p
         }
 
         if (role == PK_ROLE_ENUM_DEPENDS_ON) {
-            apt->getDepends(output, ver, recursive);
+            apt->getDepends(output, pkInfo.ver, recursive);
         } else {
-            apt->getRequires(output, ver, recursive);
+            apt->getRequires(output, pkInfo.ver, recursive);
         }
     }
 
@@ -420,13 +420,13 @@ static void pk_backend_download_packages_thread(PkBackendJob *job, GVariant *par
                 break;
             }
 
-            const pkgCache::VerIterator &ver = apt->aptCacheFile()->resolvePkgID(pi);
+            const PkgInfo &pkInfo = apt->aptCacheFile()->resolvePkgID(pi);
             // Ignore packages that could not be found or that exist only due to dependencies.
-            if (ver.end()) {
+            if (pkInfo.ver.end()) {
                 _error->Error("Can't find this package id \"%s\".", pi);
                 continue;
             } else {
-                if(!ver.Downloadable()) {
+                if(!pkInfo.ver.Downloadable()) {
                     _error->Error("No downloadable files for %s,"
                                   "perhaps it is a local or obsolete" "package?",
                                   pi);
@@ -435,7 +435,7 @@ static void pk_backend_download_packages_thread(PkBackendJob *job, GVariant *par
 
                 string storeFileName;
                 if (!apt->getArchive(&fetcher,
-                                     ver,
+                                     pkInfo.ver,
                                      directory,
                                      storeFileName)) {
                     return;
@@ -519,7 +519,7 @@ static void pk_backend_resolve_thread(PkBackendJob *job, GVariant *params, gpoin
     PkgList pkgs = apt->resolvePackageIds(search);
 
     // It's faster to emit the packages here rather than in the matching part
-    apt->emitPackages(pkgs, filters);
+    apt->emitPackages(pkgs, filters, PK_INFO_ENUM_UNKNOWN, true);
 }
 
 void pk_backend_resolve(PkBackend *backend, PkBackendJob *job, PkBitfield filters, gchar **packages)
@@ -595,7 +595,7 @@ static void backend_search_package_thread(PkBackendJob *job, GVariant *params, g
     }
 
     // It's faster to emit the packages here than in the matching part
-    apt->emitPackages(output, filters);
+    apt->emitPackages(output, filters, PK_INFO_ENUM_UNKNOWN, true);
 
     pk_backend_job_set_percentage(job, 100);
 }
@@ -781,7 +781,7 @@ static void backend_repo_manager_thread(PkBackendJob *job, GVariant *params, gpo
         }
 
         string sections = souceRecord->joinedSections();
-        
+
         string repoId = souceRecord->repoId();
 
         if (role == PK_ROLE_ENUM_GET_REPO_LIST) {
