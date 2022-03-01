@@ -34,8 +34,11 @@
 #include <apt-pkg/algorithms.h>
 #include <apt-pkg/pkgsystem.h>
 #include <apt-pkg/version.h>
+#include <apt-pkg/rpmsystem.h>
 
 #include <appstream.h>
+
+#include <boost/scope_exit.hpp>
 
 #include <sys/statvfs.h>
 #include <sys/statfs.h>
@@ -1223,38 +1226,46 @@ PkgList AptIntf::searchPackageFiles(gchar **values)
         return output;
     }
 
-    DIR *dp;
-    struct dirent *dirp;
-    if (!(dp = opendir("/var/lib/dpkg/info/"))) {
-        g_debug ("Error opening /var/lib/dpkg/info/\n");
-        regfree(&re);
-        return output;
-    }
+    // Non-owner pointer
+    RPMDBHandler *db_handler = rpmSys.GetDBHandler();
 
-    string line;
-    while ((dirp = readdir(dp)) != NULL) {
+    db_handler->Rewind();
+
+    while (db_handler->Skip())
+    {
+        Header header = db_handler->GetHeader();
+
         if (m_cancel) {
             break;
         }
 
-        if (ends_with(dirp->d_name, ".list")) {
-            string file(dirp->d_name);
-            string f = "/var/lib/dpkg/info/" + file;
-            ifstream in(f.c_str());
-            if (!in != 0) {
-                continue;
-            }
+        const char *FileName;
+        rpmtd fileNames = rpmtdNew();
 
-            while (!in.eof()) {
-                getline(in, line);
-                if (regexec(&re, line.c_str(), (size_t)0, NULL, 0) == 0) {
-                    packages.push_back(file.erase(file.size() - 5, file.size()));
-                    break;
+        BOOST_SCOPE_EXIT( (&fileNames) )
+        {
+            rpmtdFreeData(fileNames);
+            rpmtdFree(fileNames);
+        } BOOST_SCOPE_EXIT_END;
+
+        if ((headerGet(header, RPMTAG_OLDFILENAMES, fileNames, HEADERGET_EXT) != 1)
+            && (headerGet(header, RPMTAG_FILENAMES, fileNames, HEADERGET_EXT) != 1))
+        {
+            continue;
+        }
+
+        while ((FileName = rpmtdNextString(fileNames)) != NULL)
+        {
+            if (regexec(&re, FileName, (size_t)0, NULL, 0) == 0)
+            {
+                const char *packageName = headerGetString(header, RPMTAG_NAME);
+                if (packageName)
+                {
+                    packages.push_back(packageName);
                 }
             }
         }
     }
-    closedir(dp);
     regfree(&re);
 
     // Resolve the package names now
@@ -1428,36 +1439,50 @@ void AptIntf::providesMimeType(PkgList &output, gchar **values)
 bool AptIntf::isApplication(const pkgCache::VerIterator &ver)
 {
     bool ret = false;
-    gchar *fileName;
-    string line;
 
-    fileName = g_strdup_printf("/var/lib/dpkg/info/%s:%s.list",
-                               ver.ParentPkg().Name(),
-                               ver.Arch());
-    if (!FileExists(fileName)) {
-        g_free(fileName);
-        // if the file was not found try without the arch field
-        fileName = g_strdup_printf("/var/lib/dpkg/info/%s.list",
-                                   ver.ParentPkg().Name());
-    }
+    // Non-owner pointer
+    RPMDBHandler *db_handler = rpmSys.GetDBHandler();
 
-    if (FileExists(fileName)) {
-        ifstream in(fileName);
-        if (!in != 0) {
-            g_free(fileName);
-            return false;
+    // It's currently impossible to jump to specific package, have to search through all
+    db_handler->Rewind();
+
+    while (db_handler->Skip())
+    {
+        Header header = db_handler->GetHeader();
+        if (!header)
+        {
+            continue;
         }
 
-        while (in.eof() == false) {
-            getline(in, line);
-            if (ends_with(line, ".desktop")) {
-                ret = true;
-                break;
+        if (strcmp(headerGetString(header, RPMTAG_NAME), ver.ParentPkg().Name()) != 0)
+        {
+            continue;
+        }
+
+        const char *FileName;
+        rpmtd fileNames = rpmtdNew();
+
+        BOOST_SCOPE_EXIT( (&fileNames) )
+        {
+            rpmtdFreeData(fileNames);
+            rpmtdFree(fileNames);
+        } BOOST_SCOPE_EXIT_END;
+
+        if ((headerGet(header, RPMTAG_OLDFILENAMES, fileNames, HEADERGET_EXT) == 1)
+            || (headerGet(header, RPMTAG_FILENAMES, fileNames, HEADERGET_EXT) == 1))
+        {
+            while ((FileName = rpmtdNextString(fileNames)) != NULL)
+            {
+                if (ends_with(FileName, ".desktop"))
+                {
+                    ret = true;
+                    break;
+                }
             }
         }
+        break;
     }
 
-    g_free(fileName);
     return ret;
 }
 
@@ -1470,31 +1495,47 @@ void AptIntf::emitPackageFiles(const gchar *pi)
 
     parts = pk_package_id_split(pi);
 
-    string fName;
-    fName = "/var/lib/dpkg/info/" +
-            string(parts[PK_PACKAGE_ID_NAME]) +
-            ":" +
-            string(parts[PK_PACKAGE_ID_ARCH]) +
-            ".list";
-    if (!FileExists(fName)) {
-        // if the file was not found try without the arch field
-        fName = "/var/lib/dpkg/info/" +
-                string(parts[PK_PACKAGE_ID_NAME]) +
-                ".list";
-    }
-    g_strfreev (parts);
+    BOOST_SCOPE_EXIT( (&parts) )
+    {
+        g_strfreev(parts);
+    } BOOST_SCOPE_EXIT_END;
 
-    if (FileExists(fName)) {
-        ifstream in(fName.c_str());
-        if (!in != 0) {
-            return;
+    // Non-owner pointer
+    RPMDBHandler *db_handler = rpmSys.GetDBHandler();
+
+    // It's currently impossible to jump to specific package, have to search through all
+    db_handler->Rewind();
+
+    while (db_handler->Skip())
+    {
+        Header header = db_handler->GetHeader();
+        if (!header)
+        {
+            continue;
         }
 
+        if (strcmp(headerGetString(header, RPMTAG_NAME), parts[PK_PACKAGE_ID_NAME]) != 0)
+        {
+            continue;
+        }
+
+        const char *FileName;
+        rpmtd fileNames = rpmtdNew();
+
+        BOOST_SCOPE_EXIT( (&fileNames) )
+        {
+            rpmtdFreeData(fileNames);
+            rpmtdFree(fileNames);
+        } BOOST_SCOPE_EXIT_END;
+
         files = g_ptr_array_new_with_free_func(g_free);
-        while (in.eof() == false) {
-            getline(in, line);
-            if (!line.empty()) {
-                g_ptr_array_add(files, g_strdup(line.c_str()));
+
+        if ((headerGet(header, RPMTAG_OLDFILENAMES, fileNames, HEADERGET_EXT) == 1)
+            || (headerGet(header, RPMTAG_FILENAMES, fileNames, HEADERGET_EXT) == 1))
+        {
+            while ((FileName = rpmtdNextString(fileNames)) != NULL)
+            {
+                g_ptr_array_add(files, g_strdup(FileName));
             }
         }
 
@@ -1503,6 +1544,7 @@ void AptIntf::emitPackageFiles(const gchar *pi)
             pk_backend_job_files(m_job, pi, (gchar **) files->pdata);
         }
         g_ptr_array_unref(files);
+        break;
     }
 }
 
