@@ -24,6 +24,10 @@
 
 #include "apt-intf.h"
 
+#ifdef WITH_LUA
+#include <apt-pkg/luaiface.h>
+#endif
+
 #include <apt-pkg/init.h>
 #include <apt-pkg/error.h>
 #include <apt-pkg/fileutl.h>
@@ -31,13 +35,7 @@
 #include <apt-pkg/update.h>
 #include <apt-pkg/algorithms.h>
 #include <apt-pkg/pkgsystem.h>
-#include <apt-pkg/update.h>
 #include <apt-pkg/version.h>
-#include <apt-pkg/sourcelist.h>
-
-#ifdef WITH_LUA
-#include <apt-pkg/luaiface.h>
-#endif
 
 #include <appstream.h>
 
