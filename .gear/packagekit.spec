@@ -268,6 +268,9 @@ rm -f %_localstatedir/PackageKit/upgrade_lock ||:
   (pkgCacheFile class in RAII style).
 - This also fixed a memory leak/dangling pointers to the caches.
   (The old implementation of pkgCacheFile in apt was "wrong".)
+[backport 1.2.5-alt7 changes]
+- Adapted to ALT's apt API a bit further by dropping an unused parameter of
+  MarkInstall(). (In apt, it either has a default value or will be eliminated.)
 
 * Tue May 28 2024 Ivan Zakharyaschev <imz@altlinux.org> 1.1.13.0.0.5-alt1
 - A possible fix for polkit dialogs popping up on background refresh operations
