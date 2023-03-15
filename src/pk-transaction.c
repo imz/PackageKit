@@ -86,6 +86,7 @@ struct PkTransactionPrivate
 	guint			 speed;
 	guint			 download_size_remaining;
 	gboolean		 finished;
+	gboolean		 emitted_finished;
 	gboolean		 allow_cancel;
 	gboolean		 waiting_for_auth;
 	gboolean		 emit_eula_required;
@@ -389,6 +390,9 @@ pk_transaction_finished_emit (PkTransaction *transaction,
 			      PkExitEnum exit_enum,
 			      guint time_ms)
 {
+	g_assert (!transaction->priv->emitted_finished);
+	transaction->priv->emitted_finished = TRUE;
+
 	g_debug ("emitting finished '%s', %i",
 		 pk_exit_enum_to_string (exit_enum),
 		 time_ms);
