@@ -136,6 +136,11 @@ public:
      */
     std::string getLongDescriptionParsed(const pkgCache::VerIterator &ver);
 
+    /** \return the changelog string corresponding to the given
+     *  version.
+     */
+    std::string getChangelog(const pkgCache::VerIterator &ver);
+
     bool tryToInstall(pkgProblemResolver &Fix,
                       const PkgInfo &pki,
                       bool autoInst,

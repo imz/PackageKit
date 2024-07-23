@@ -497,6 +497,25 @@ std::string AptCacheFile::getLongDescriptionParsed(const pkgCache::VerIterator &
     return debParser(getLongDescription(ver));
 }
 
+std::string AptCacheFile::getChangelog(const pkgCache::VerIterator &ver)
+{
+    if (ver.end()) {
+        return string();
+    }
+
+    pkgCache::VerFileIterator vf = ver.FileList();
+    if (vf.end()) {
+        return string();
+    }
+
+    pkgRecords * const recs = GetPkgRecords();
+    if (!recs) {
+        return string();
+    }
+
+    return recs->Lookup(vf).Changelog();
+}
+
 bool AptCacheFile::tryToInstall(pkgProblemResolver &Fix,
                                 const PkgInfo &pki,
                                 bool autoInst,
