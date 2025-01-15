@@ -43,12 +43,11 @@
 
 class pkgProblemResolver;
 class Matcher;
-class AptCacheFile;
 class AptJob
 {
 public:
     AptJob(PkBackendJob *job);
-    ~AptJob();
+    ~AptJob() = default;
 
     bool init(gchar **localDebs = nullptr);
     void cancel();
