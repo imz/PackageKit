@@ -5,8 +5,8 @@
 
 Summary:   Package management service
 Name:      packagekit
-Version:   1.2.5.0.0.30
-Release:   alt3
+Version:   1.3.0
+Release:   alt1
 License:   LGPL-2.1+
 Group:     Other
 URL:       http://www.freedesktop.org/software/PackageKit/
@@ -115,7 +115,7 @@ Python3 backend for PackageKit.
 %patch1 -p1
 %ifarch %e2k
 # workaround for EDG frontend
-sed -i "s|g_autofree gchar \*|g_autofree_edg(gchar) |" backends/aptcc/apt-{utils,intf}.cpp
+sed -i "s|g_autofree gchar \*|g_autofree_edg(gchar) |" backends/apt/apt-{utils,intf}.cpp
 %endif
 
 %build
@@ -126,7 +126,7 @@ sed -i "s|g_autofree gchar \*|g_autofree_edg(gchar) |" backends/aptcc/apt-{utils
 %endif
 %add_optflags -D_FILE_OFFSET_BITS=64
 %meson \
-	-Dpackaging_backend=aptcc \
+	-Dpackaging_backend=apt \
 	-Dsystemd=true \
 	-Doffline_update=true \
 	-Dgtk_doc=true \
@@ -163,12 +163,15 @@ rm -rf %buildroot%_datadir/PackageKit/helpers/test_spawn
 rm -f %buildroot%_datadir/PackageKit/pk-upgrade-distro.sh
 
 # Remove unused files
-rm -f %buildroot%_datadir/PackageKit/helpers/aptcc/pkconffile.nodiff
+rm -f %buildroot%_datadir/PackageKit/helpers/apt/pkconffile.nodiff
 
 touch %buildroot%_localstatedir/PackageKit/upgrade_lock
 
 mkdir -p %buildroot%_sysconfdir/NetworkManager/dispatcher.d/pre-up.d/
 install -m 0755 %SOURCE2 %buildroot%_sysconfdir/NetworkManager/dispatcher.d/pre-up.d/
+
+mkdir -p %buildroot%_sysconfdir/dbus-1/system.d
+mv %buildroot%_datadir/dbus-1/system.d/org.freedesktop.PackageKit.conf %buildroot%_sysconfdir/dbus-1/system.d/
 
 %find_lang PackageKit
 
@@ -221,7 +224,7 @@ rm -f %_localstatedir/PackageKit/upgrade_lock ||:
 
 %files -f PackageKit.lang
 %doc COPYING
-%doc README AUTHORS NEWS
+%doc README.md AUTHORS NEWS
 %dir %_datadir/PackageKit
 %dir %_datadir/PackageKit/helpers
 %dir %_sysconfdir/PackageKit
@@ -246,12 +249,13 @@ rm -f %_localstatedir/PackageKit/upgrade_lock ||:
 %ghost %verify(not md5 size mtime) %_localstatedir/PackageKit/transactions.db
 %ghost %_localstatedir/PackageKit/upgrade_lock
 %_datadir/dbus-1/system-services/*.service
+%_datadir/metainfo/*.xml
 %_unitdir/packagekit-offline-update.service
 %_unitdir/packagekit.service
 %_unitdir/system-update.target.wants/
 %_libexecdir/pk-*offline-update
 %config %_sysconfdir/apt/apt.conf.d/20packagekit
-%_libdir/packagekit-backend/libpk_backend_aptcc.so
+%_libdir/packagekit-backend/libpk_backend_apt.so
 %_libexecdir/pk-invoke-filetriggers.sh
 %_sysconfdir/NetworkManager/dispatcher.d/pre-up.d/packagekit.sh
 
@@ -305,6 +309,9 @@ Immediately test PackageKit when installing this package.
 
 
 %changelog
+* Wed Jan 15 2025 Dmitrii Fomchenkov <sirius@altlinux.org> 1.3.0-alt1
+- Updated to upstream version 1.3.0
+
 * Tue May 07 2024 Sergey V Turchin <zerg@altlinux.org> 1.2.5.0.0.30-alt3
 - Add new appstream support from upstream.
 
