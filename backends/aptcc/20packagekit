@@ -1,7 +1,0 @@
-// THIS FILE IS USED TO INFORM PACKAGEKIT
-// THAT THE UPDATE-INFO MIGHT HAVE CHANGED
-
-// When Apt's cache is updated (i.e. apt-cache update)
-RPM::Post-Invoke {
-"/usr/bin/test -e /usr/share/dbus-1/system-services/org.freedesktop.PackageKit.service && /usr/bin/test -S /var/run/dbus/system_bus_socket && /usr/bin/gdbus call --system --dest org.freedesktop.PackageKit --object-path /org/freedesktop/PackageKit --timeout 4 --method org.freedesktop.PackageKit.StateHasChanged cache-update > /dev/null; /bin/echo > /dev/null";
-};
