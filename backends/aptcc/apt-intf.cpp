@@ -79,8 +79,6 @@ bool AptIntf::init(gchar **localDebs)
     const gchar *http_proxy;
     const gchar *ftp_proxy;
 
-    m_isMultiArch = APT::Configuration::getArchitectures(false).size() > 1;
-
     // set locale
     setEnvLocaleFromJob();
 
@@ -222,16 +220,6 @@ bool AptIntf::matchPackage(const pkgCache::VerIterator &ver, PkBitfield filters)
         // Check if the package is installed
         if (pkg->CurrentState == pkgCache::State::Installed && pkg.CurrentVer() == ver)
             installed = true;
-
-        // if we are on multiarch check also the arch filter
-        if (m_isMultiArch && pk_bitfield_contain(filters, PK_FILTER_ENUM_ARCH)/* && !installed*/) {
-            // don't emit the package if it does not match
-            // the native architecture
-            if (strcmp(ver.Arch(), "all") != 0 &&
-                    strcmp(ver.Arch(), _config->Find("APT::Architecture").c_str()) != 0) {
-                return false;
-            }
-        }
 
         std::string str = ver.Section() == NULL ? "" : ver.Section();
         std::string section, component;
