@@ -1618,11 +1618,11 @@ bool AptJob::runTransaction(const PkgList &install, const PkgList &remove, const
     return ret;
 }
 
-void AptIntf::showProgress(const char *nevra,
-                           const aptCallbackType what,
-                           const uint64_t amount,
-                           const uint64_t total,
-                           void *data)
+void AptJob::showProgress(const char *nevra,
+                          const aptCallbackType what,
+                          const uint64_t amount,
+                          const uint64_t total,
+                          void *data)
 {
     OpProgress *progress = (OpProgress *) data;
     switch (what) {
