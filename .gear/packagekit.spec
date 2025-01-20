@@ -117,11 +117,6 @@ sed -i "s|g_autofree gchar \*|g_autofree_edg(gchar) |" backends/aptcc/apt-{utils
 %endif
 
 %build
-%ifnarch %e2k
-%add_optflags -std=c++17
-%else
-%add_optflags -std=c++14
-%endif
 %add_optflags -D_FILE_OFFSET_BITS=64
 %meson \
 	-Dpackaging_backend=aptcc \
