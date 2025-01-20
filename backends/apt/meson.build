@@ -74,6 +74,10 @@ shared_module(
   override_options: [
     'c_std=c11',
     'cpp_std=c++17'
+    # The minimal requirement of APT headers is C++17 since 0.5.15lorg2-alt72
+    # (TODO: pkg-config for APT so that clients like PK get this requirement
+    # automatically). On e2k, as of now, no extra treatment is needed for the
+    # compiler to understand -std=c++17 in {sisyphus,p10,c10f2,p9}_e2k.
   ],
   install: true,
   install_dir: pk_plugin_dir,
