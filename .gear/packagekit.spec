@@ -111,10 +111,6 @@ Python3 backend for PackageKit.
 %prep
 %setup
 %patch1 -p1
-%ifarch %e2k
-# workaround for EDG frontend
-sed -i "s|g_autofree gchar \*|g_autofree_edg(gchar) |" backends/apt/apt-{utils,job}.cpp
-%endif
 
 %build
 %add_optflags -D_FILE_OFFSET_BITS=64
