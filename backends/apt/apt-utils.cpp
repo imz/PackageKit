@@ -263,8 +263,7 @@ string fetchChangelogData(AptCacheFile &CacheFile,
             GMatchInfo *match_info;
             if (g_regex_match(regexDate, str, G_REGEX_MATCH_ANCHORED, &match_info)) {
                 g_autoptr(GDateTime) dateTime = NULL;
-                g_autofree gchar *date = NULL;
-                date = g_match_info_fetch_named(match_info, "date");
+                g_autofree gchar * const date = g_match_info_fetch_named(match_info, "date");
                 time_t time;
                 g_warn_if_fail(RFC1123StrToTime(date, time));
                 dateTime = g_date_time_new_from_unix_local(time);
