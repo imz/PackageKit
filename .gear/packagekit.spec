@@ -113,9 +113,22 @@ Python3 backend for PackageKit.
 %patch1 -p1
 %ifarch %e2k
 # workaround for EDG frontend
-sed -i "s|g_autofree gchar \*|g_autofree_edg(gchar) |" backends/apt/apt-{utils,job}.cpp
+#
+# In the apt backend, all the uses of g_autofree gchar * are for
+# auto-managed scope-local pointers that are actually understood to be
+# const (after an immediate initialization). This makes our rewrite
+# correct: we present the thing as a const pointer for the rest of the
+# code, but get it via a class that manages memory. And we add
+# unconditionally the const modifier to ensure the correctness of our
+# rewrite: if our assumption (about how the pointer is used) is wrong,
+# this will be caught by the compiler due to the const modifier.
 
-# Explanation: The workaround is needed only for C++:
+sed -i \
+    -Ee 's|g_autofree[[:blank:]]+gchar[[:blank:]]*\*[[:blank:]]*(const[[:blank:]]+)?([_a-zA-Z0-9]+)(.*)$|g_autofree_edg(gchar) const _\2_owner_\3 gchar * const \2 = _\2_owner_;|' \
+    backends/apt/apt-{utils,job}.cpp
+
+# Explanation 1/2: It's only C++ where g_autofree gchar* can't work.
+# Here is why:
 #
 # lcc: "/usr/include/glib-2.0/glib/gmacros.h", line 1365: warning #3330:
 #           attribute "cleanup" is not yet supported in C++ mode
@@ -125,8 +138,33 @@ sed -i "s|g_autofree gchar \*|g_autofree_edg(gchar) |" backends/apt/apt-{utils,j
 #  in expansion of macro "_GLIB_CLEANUP" at line 1473
 #  in expansion of macro "g_autofree" at line 755 of
 #
-# Let's catch the missed problems:
+# Therefore we have to rewrite it to produce the correct behavior
+# without employing the cleanup attribute. Let's catch the missed
+# problems so that such declarations aren't left unnoticed:
 %add_optflags -Werror=ignored-attribute-cleanup
+
+# Explanation 2/2: In their turn, any of g_auto...(...) can cause certain code
+# to work incorrectly in C++/e2k (among them: g_autofree_edg from above), since
+# they are implemented with classes (to imitate cleanup), and classes
+# can be bad substitutes for the original types in certain contexts; like this:
+#
+# lcc: "../backends/apt/apt-job.cpp", line 880: warning #1290: a class type that
+#           is not trivially copyable passed through ellipsis
+#                 "updates", updates, //const gchar *updates
+#                            ^
+#
+# Therefore, in general, we have to rewrite the var definitions so
+# that the original names are bound to mere pointers (of the original
+# types), which are managed (owned) by the e2k workaround classes (or
+# another auto-pointer) from a supplemental definition (and we do so
+# in the sed above); in most cases, these problems don't exist in
+# practice, in few cases the upstream code can be just simplified to
+# avoid dynamic allocation. We haven't found a way to make the
+# corresponding compiler warnings fatal to catch this kind of
+# misuses. (TODO: perhaps, patch Glib/e2k so that these classes are
+# not copyable to prohibit uses in such contexts and make such uses
+# detected by the compiler as errors.)
+
 %endif
 
 %build
