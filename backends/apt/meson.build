@@ -67,6 +67,7 @@ shared_module(
     '-Werror=overloaded-virtual',
     # style enforcement: always use the keyword, which helps to avoid API misuse
     '-Werror=suggest-override',
+    '-Werror',
   ],
   link_args: [
     '-lutil',
