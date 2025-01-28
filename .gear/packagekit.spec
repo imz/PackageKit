@@ -165,6 +165,7 @@ sed -i \
 # not copyable to prohibit uses in such contexts and make such uses
 # detected by the compiler as errors.)
 
+%remove_optflags -Wno-error
 %endif
 
 %build
