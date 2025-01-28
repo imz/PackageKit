@@ -164,6 +164,7 @@ sed -i \
 # misuses. (TODO: perhaps, patch Glib/e2k so that these classes are
 # not copyable to prohibit uses in such contexts and make such uses
 # detected by the compiler as errors.)
+%add_optflags -Werror=d1290
 
 %endif
 
