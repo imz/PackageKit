@@ -155,6 +155,12 @@ add_project_arguments(
   language: 'c'
 )
 
+# default compiler flags for C++ only
+add_project_arguments(
+  '-Werror',
+  language: 'cpp'
+)
+
 subdir('po')
 subdir('policy')
 subdir('etc')
