@@ -58,7 +58,10 @@ shared_module(
     gstreamer_base_dep,
     gstreamer_plugins_base_dep,
   ],
-  c_args: c_args,
+  c_args: [
+    c_args,
+    '-Werror',
+  ],
   cpp_args: [
     '-DPK_COMPILATION',
     c_args,
