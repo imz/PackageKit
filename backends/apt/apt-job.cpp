@@ -794,7 +794,7 @@ void AptJob::stageUpdateDetail(GPtrArray *updateArray, const pkgCache::VerIterat
     const pkgCache::VerIterator &currver = m_cache->findVer(pkg);
 
     // Build a package_id from the current version
-    gchar *current_package_id = m_cache->buildPackageId(currver);
+    g_autofree gchar * const current_package_id = m_cache->buildPackageId(currver);
 
     pkgCache::VerFileIterator vf = candver.FileList();
     string origin = vf.File().Origin() == NULL ? "" : vf.File().Origin();
@@ -854,9 +854,7 @@ void AptJob::stageUpdateDetail(GPtrArray *updateArray, const pkgCache::VerIterat
         restart = PK_RESTART_ENUM_SYSTEM;
     }
 
-    g_auto(GStrv) updates = (gchar **) g_malloc(2 * sizeof(gchar *));
-    updates[0] = current_package_id;
-    updates[1] = NULL;
+    const gchar * const updates[] = { current_package_id, NULL };
 
     g_autoptr(GPtrArray) bugzilla_urls = getBugzillaUrls(changelog);
     g_autoptr(GPtrArray) cve_urls = getCVEUrls(changelog);
