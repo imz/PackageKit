@@ -63,10 +63,11 @@ shared_module(
     '-DPK_COMPILATION',
     c_args,
     ddtp_flag,
-    # To avoid some errors on API change (but gcc seems not to issue a warning
-    # when the overloaded stuff is from /usr/include/ unfortunately):
+    # To avoid some coding errors on API change (but gcc seems not to issue
+    # a warning when the overloaded stuff is from /usr/include/ unfortunately):
     '-Werror=overloaded-virtual',
-    # style enforcement: always use the keyword, which helps to avoid API misuse
+    # Style enforcement: always use the keyword, which helps to avoid API misuse.
+    # (this flag is ignored by lcc/e2k)
     '-Werror=suggest-override',
   ],
   link_args: [
