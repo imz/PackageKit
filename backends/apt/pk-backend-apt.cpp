@@ -66,13 +66,6 @@ void pk_backend_initialize(GKeyFile *conf, PkBackend *backend)
 
     g_debug("Using APT: %s", pkgVersion);
 
-    // Disable apt-listbugs as it freezes PK
-    g_setenv("APT_LISTBUGS_FRONTEND", "none", 1);
-
-    // Set apt-listchanges frontend to "debconf" to make it's output visible
-    // (without using the debconf frontend, PK will freeze)
-    g_setenv("APT_LISTCHANGES_FRONTEND", "debconf", 1);
-
     // pkgInitConfig makes sure the config is ready for the
     // get-filters call which needs to know about multi-arch
     if (!pkgInitConfig(*_config)) {
