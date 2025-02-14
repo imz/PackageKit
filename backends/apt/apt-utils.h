@@ -49,8 +49,7 @@ GPtrArray* getChangelogChanges(AptCacheFile &CacheFile,
 /**
   * Return the changelog and extract details about the changes.
   */
-string fetchChangelogData(AptCacheFile &CacheFile,
-                          pkgAcquire &Fetcher,
+string prepareChangelogData(AptCacheFile &CacheFile,
                           pkgCache::VerIterator Ver,
                           pkgCache::VerIterator currver,
                           string *update_text,

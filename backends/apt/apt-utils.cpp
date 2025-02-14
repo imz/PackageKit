@@ -216,8 +216,7 @@ GPtrArray* getChangelogChanges(AptCacheFile &CacheFile,
     return changelogs;
 }
 
-string fetchChangelogData(AptCacheFile &CacheFile,
-                          pkgAcquire &Fetcher,
+string prepareChangelogData(AptCacheFile &CacheFile,
                           pkgCache::VerIterator Ver,
                           pkgCache::VerIterator currver,
                           string *update_text,
@@ -284,11 +283,6 @@ string fetchChangelogData(AptCacheFile &CacheFile,
     g_regex_unref(content_re);
 
 #if 0
-    pkgAcqChangelog *c = new pkgAcqChangelog(&Fetcher, Ver);
-
-    // try downloading it, if that fails, try third-party-changelogs location
-    // FIXME: Fetcher.Run() is "Continue" even if I get a 404?!?
-    Fetcher.Run();
 
     // error
     pkgRecords Recs(CacheFile);
@@ -298,14 +292,6 @@ string fetchChangelogData(AptCacheFile &CacheFile,
 #endif
 
 #if 0
-    // return empty string if we don't have a file to read
-    if (!FileExists(c->DestFile)) {
-        return changelog;
-    }
-
-    if (_error->PendingError()) {
-        return changelog;
-    }
 
     ifstream in(c->DestFile.c_str());
     string line;

@@ -812,27 +812,15 @@ void AptJob::stageUpdateDetail(GPtrArray *updateArray, const pkgCache::VerIterat
         srcpkg = rec.SourcePkg();
     }
 
-    PkBackend *backend = PK_BACKEND(pk_backend_job_get_backend(m_job));
-    if (pk_backend_is_online(backend)) {
-        // Create the download object
-        AcqPackageKitStatus Stat(this);
+    changelog = prepareChangelogData(*m_cache,
+                                     candver,
+                                     currver,
+                                     &update_text,
+                                     &updated,
+                                     &issued);
 
-        // get a fetcher
-        pkgAcquire fetcher(&Stat);
-
-        // fetch the changelog
-        pk_backend_job_set_status(m_job, PK_STATUS_ENUM_DOWNLOAD_CHANGELOG);
-        changelog = fetchChangelogData(*m_cache,
-                                       fetcher,
-                                       candver,
-                                       currver,
-                                       &update_text,
-                                       &updated,
-                                       &issued);
-
-        if (!changelog.empty()) {
-            changelog.insert(0, "\n");
-        }
+    if (!changelog.empty()) {
+        changelog.insert(0, "\n");
     }
 
     // Check if the update was updates since it was issued
