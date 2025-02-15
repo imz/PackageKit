@@ -269,6 +269,7 @@ string prepareChangelogData(AptCacheFile &CacheFile,
                 isEnd = true;
             }
 
+            g_free(formatChangelog);
             g_free(pkg_date);
             g_free(pkg_packager);
             g_free(pkg_mail);
