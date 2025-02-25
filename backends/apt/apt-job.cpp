@@ -1593,12 +1593,15 @@ bool AptJob::runTransaction(const PkgList &install, const PkgList &remove, const
                     if (m_cancel) {
                         break;
                     }
-                    if (!m_cache->tryToInstall(Fix,
-                                               pkInfo,
-                                               autoInst,
-                                               op.preserveAuto,
-                                               autoInst && attemptFixBroken)) {
-                        return false;
+                    if (!autoInst || !pkInfo.solved)
+                    {
+                        if (!m_cache->tryToInstall(Fix,
+                                                   pkInfo,
+                                                   autoInst,
+                                                   op.preserveAuto,
+                                                   autoInst && attemptFixBroken)) {
+                            return false;
+                        }
                     }
 
                     // count only once (on the second pass)
