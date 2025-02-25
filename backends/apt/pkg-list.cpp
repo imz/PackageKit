@@ -85,9 +85,11 @@ public:
     }
 };
 
-void PkgList::append(const pkgCache::VerIterator &verIter, PkgAction action)
+void PkgList::append(const pkgCache::VerIterator &verIter,
+                     PkgSolved solved,
+                     PkgAction action)
 {
-    this->push_back(PkgInfo(verIter, action));
+    this->push_back(PkgInfo(verIter, solved, action));
 }
 
 bool PkgList::contains(const pkgCache::PkgIterator &pkg)

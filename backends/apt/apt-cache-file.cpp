@@ -401,6 +401,7 @@ PkgInfo AptCacheFile::resolvePkgID(const gchar *packageId)
 
     // check if any intended action was encoded in this package-ID
     auto piAction = PkgAction::NONE;
+    auto piSolved = PkgSolved::UNSOLVED;
     {
         const gchar * const data = parts[PK_PACKAGE_ID_DATA];
         size_t next = 0;
@@ -415,10 +416,18 @@ PkgInfo AptCacheFile::resolvePkgID(const gchar *packageId)
         else if ( (next = match_prefix(data, "manual")) )
         {}
 
+        auto prelimSolved = PkgSolved::UNSOLVED;
+        if (data[next] == '=')
+        {
+            prelimSolved = PkgSolved::SOLVED;
+            ++next;
+        }
+
         // completely matched one of the known prefixes?
         if (data[next] == ':')
         {
             piAction = prelimAction;
+            piSolved = prelimSolved;
         }
     }
 
@@ -426,16 +435,16 @@ PkgInfo AptCacheFile::resolvePkgID(const gchar *packageId)
     // check to see if the provided package isn't virtual too
     if (ver.end() == false &&
             strcmp(ver.VerStr(), parts[PK_PACKAGE_ID_VERSION]) == 0)
-        return PkgInfo(ver, piAction);
+        return PkgInfo(ver, piSolved, piAction);
 
     // check to see if the provided package isn't virtual too
     // also iterate through all available past versions
     for (auto candidateVer = findCandidateVer(pkg); !candidateVer.end(); candidateVer++) {
         if (strcmp(candidateVer.VerStr(), parts[PK_PACKAGE_ID_VERSION]) == 0)
-            return PkgInfo(candidateVer, piAction);
+            return PkgInfo(candidateVer, piSolved, piAction);
     }
 
-    return PkgInfo(ver, piAction);
+    return PkgInfo(ver, piSolved, piAction);
 }
 
 gchar *AptCacheFile::buildPackageId(const pkgCache::VerIterator &ver)
@@ -445,10 +454,11 @@ gchar *AptCacheFile::buildPackageId(const pkgCache::VerIterator &ver)
     const pkgCache::PkgIterator &pkg = ver.ParentPkg();
     if (pkg->CurrentState == pkgCache::State::Installed && pkg.CurrentVer() == ver) {
         // when a package is installed, the data part of a package-id is "installed:<repo-id>"
-        data = "installed:" + utilBuildPackageOriginId(vf);
-    } else {
-        data = utilBuildPackageOriginId(vf);
+        data = "installed";
     }
+
+    data += ((data.length() > 0) ? std::string(":") : std::string())
+        + utilBuildPackageOriginId(vf);
 
     return pk_package_id_build(ver.ParentPkg().Name(),
                                ver.VerStr(),

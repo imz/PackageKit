@@ -38,6 +38,19 @@ enum class PkgAction
 };
 
 /**
+ * Whether a package needs resolving its deps etc or
+ * it has been marked for install and all deps resolved
+ * (as a result of a recursive MarkInstall or DistUpgrade; i.e.,
+ * it is a part of a ready solution and must not provoke the search
+ * for a different solution by a recursive MarkInstall).
+ */
+enum class PkgSolved
+{
+    UNSOLVED,
+    SOLVED
+};
+
+/**
  * Information about a package, mainly containing its VerIterator
  * and some information about the intended action on a package
  * extracted from a PackageKit package-ID.
@@ -45,14 +58,17 @@ enum class PkgAction
 class PkgInfo
 {
 public:
-    explicit PkgInfo(const pkgCache::VerIterator &verIter)
+    explicit PkgInfo(const pkgCache::VerIterator &verIter, PkgSolved s)
         : ver(verIter),
-          action(PkgAction::NONE) {};
-    explicit PkgInfo(const pkgCache::VerIterator &verIter, PkgAction a)
+          action(PkgAction::NONE),
+          solved(s) {};
+    explicit PkgInfo(const pkgCache::VerIterator &verIter, PkgSolved s, PkgAction a)
         : ver(verIter),
-          action(a) {};
+          action(a),
+          solved(s) {};
     pkgCache::VerIterator ver;
     PkgAction action;
+    PkgSolved solved;
 };
 
 /**
@@ -66,7 +82,9 @@ public:
      * @param verIter The pkgCache::VerIterator assoicated with this package.
      * @param action An optional action that should be performed on this package in future.
      */
-    void append(const pkgCache::VerIterator &verIter, PkgAction action = PkgAction::NONE);
+    void append(const pkgCache::VerIterator &verIter,
+                PkgSolved solved,
+                PkgAction action = PkgAction::NONE);
 
     void append(const PkgInfo &pi) { this->push_back(pi); };
 
