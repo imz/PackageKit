@@ -1597,7 +1597,7 @@ bool AptJob::runTransaction(const PkgList &install, const PkgList &remove, const
                                                pkInfo,
                                                autoInst,
                                                op.preserveAuto,
-                                               attemptFixBroken)) {
+                                               autoInst && attemptFixBroken)) {
                         return false;
                     }
 
