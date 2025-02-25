@@ -1600,7 +1600,10 @@ bool AptJob::runTransaction(const PkgList &install, const PkgList &remove, const
                                                attemptFixBroken)) {
                         return false;
                     }
-                    m_progress.Progress(++processed_packages);
+
+                    // count only once (on the second pass)
+                    if (autoInst)
+                        m_progress.Progress(++processed_packages);
                 }
             }
         }
