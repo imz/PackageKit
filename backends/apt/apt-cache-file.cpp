@@ -378,6 +378,15 @@ bool AptCacheFile::isRemovingEssentialPackages()
     return false;
 }
 
+template<size_t N>
+inline size_t match_prefix(const gchar * const s, const char (&p)[N])
+{
+    if (g_str_has_prefix(s, p))
+        return N-1;
+    else
+        return 0;
+}
+
 PkgInfo AptCacheFile::resolvePkgID(const gchar *packageId)
 {
     g_auto(GStrv) parts = nullptr;
@@ -392,10 +401,26 @@ PkgInfo AptCacheFile::resolvePkgID(const gchar *packageId)
 
     // check if any intended action was encoded in this package-ID
     auto piAction = PkgAction::NONE;
-    if (g_str_has_prefix(parts[PK_PACKAGE_ID_DATA], "+auto:"))
-            piAction = PkgAction::INSTALL_AUTO;
-    else if (g_str_has_prefix(parts[PK_PACKAGE_ID_DATA], "+manual:"))
-        piAction = PkgAction::INSTALL_MANUAL;
+    {
+        const gchar * const data = parts[PK_PACKAGE_ID_DATA];
+        size_t next = 0;
+
+        auto prelimAction = PkgAction::NONE;
+        if ( (next = match_prefix(data, "+auto")) )
+            prelimAction = PkgAction::INSTALL_AUTO;
+        else if ( (next = match_prefix(data, "+manual")) )
+            prelimAction = PkgAction::INSTALL_MANUAL;
+        else if ( (next = match_prefix(data, "auto")) )
+        {}
+        else if ( (next = match_prefix(data, "manual")) )
+        {}
+
+        // completely matched one of the known prefixes?
+        if (data[next] == ':')
+        {
+            piAction = prelimAction;
+        }
+    }
 
     const pkgCache::VerIterator &ver = findVer(pkg);
     // check to see if the provided package isn't virtual too
