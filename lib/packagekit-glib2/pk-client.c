@@ -44,6 +44,7 @@
 #include <packagekit-glib2/pk-enum.h>
 #include <packagekit-glib2/pk-package-id.h>
 #include <packagekit-glib2/pk-package-ids.h>
+#include <packagekit-glib2/pk-offline-private.h>
 
 static void     pk_client_finalize	(GObject     *object);
 
@@ -1201,6 +1202,7 @@ pk_client_signal_finished (PkClientState *state,
 	/* we're done */
 	state->ret = TRUE;
 	pk_client_state_finish (state, NULL);
+	pk_offline_auth_set_results(state->results, &error);
 }
 
 static void
