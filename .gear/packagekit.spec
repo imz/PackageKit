@@ -308,6 +308,9 @@ Immediately test PackageKit when installing this package.
 - Made more flexible in the prerequisites' versions that it can be compiled
   with. (With newer appstream.)
 
+* Wed Apr 09 2025 Alexander Danilov <admsasha@altlinux.org> 1.2.5-alt7.c10f2.2
+- Applied security fixes from upstream (Fixes: CVE-2024-0217).
+
 * Tue May 07 2024 Sergey V Turchin <zerg@altlinux.org> 1.2.5.0.0.30-alt3
 - Add new appstream support from upstream.
 
