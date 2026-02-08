@@ -304,6 +304,8 @@ Immediately test PackageKit when installing this package.
 - Fixes:
   + CVE-2024-0217 use-after-free in idle function callback
   + CVE-2026-41651 time-of-check/-use race allows a local privilege escalation
+  + OVE-20260209-0001 incorrect check of data lets a user consume all memory
+    https://github.com/PackageKit/PackageKit/pull/706
 - Made more flexible in the prerequisites' versions that it can be compiled
   with. (With newer appstream. On e2k, with non-e2k-adapted libapt headers
   as in 0.5.15lorg2-alt95.p10.1: with newer C++ features as they are.)
