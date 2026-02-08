@@ -304,7 +304,11 @@ Immediately test PackageKit when installing this package.
 
 %changelog
 * Tue May 19 2026 Ivan Zakharyaschev <imz@altlinux.org> 1.2.5.0.0.30-alt3.p10.1
-  (A conservative update for p10.)
+  (A conservative update for p10. The fixes from c10f2 taken up, but not
+  the removal of polkit permission for wheel users to install packages.)
+- Fixes:
+  + CVE-2024-0217 use-after-free in idle function callback
+  + CVE-2026-41651 time-of-check/-use race allows a local privilege escalation
 - Made more flexible in the prerequisites' versions that it can be compiled
   with. (With newer appstream.)
 
