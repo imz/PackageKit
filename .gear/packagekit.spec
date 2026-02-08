@@ -6,7 +6,7 @@
 Summary:   Package management service
 Name:      packagekit
 Version:   1.2.5.0.0.30
-Release:   alt3
+Release:   alt3.p10.1
 License:   LGPL-2.1+
 Group:     Other
 URL:       http://www.freedesktop.org/software/PackageKit/
@@ -303,6 +303,11 @@ Immediately test PackageKit when installing this package.
 
 
 %changelog
+* Sun Feb  8 2026 Ivan Zakharyaschev <imz@altlinux.org> 1.2.5.0.0.30-alt3.p10.1
+  (A conservative update for p10.)
+- Made more flexible in the prerequisites' versions that it can be compiled
+  with. (With newer appstream.)
+
 * Tue May 07 2024 Sergey V Turchin <zerg@altlinux.org> 1.2.5.0.0.30-alt3
 - Add new appstream support from upstream.
 
