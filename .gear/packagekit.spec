@@ -305,7 +305,8 @@ Immediately test PackageKit when installing this package.
   + CVE-2024-0217 use-after-free in idle function callback
   + CVE-2026-41651 time-of-check/-use race allows a local privilege escalation
 - Made more flexible in the prerequisites' versions that it can be compiled
-  with. (With newer appstream.)
+  with. (With newer appstream. On e2k, with non-e2k-adapted libapt headers
+  as in 0.5.15lorg2-alt95.p10.1: with newer C++ features as they are.)
 
 * Fri Apr 24 2026 Alexander Danilov <admsasha@altlinux.org> 1.2.5-alt7.c10f2.3
 - Applied security fixes from upstream (Fixes: CVE-2026-41651).
