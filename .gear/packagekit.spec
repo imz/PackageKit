@@ -39,6 +39,11 @@ BuildRequires: libgtk+3-devel
 # (/var/cache/apt/archives/).
 Requires: apt
 
+# A couple of actions from later plymouth are hardcoded in pk-offline-update:
+# (FIXME: test that it's not compatible with 1:0.9.4 in p9 (with Epoch);
+# TODO: write rpmverdepcmp util, rpmoverlap...)
+Conflicts: plymouth < 0.9.5
+
 %add_findreq_skiplist  %_datadir/vala/vapi/*
 %add_findprov_skiplist %_datadir/vala/vapi/*
 

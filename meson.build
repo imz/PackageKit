@@ -55,10 +55,6 @@ if get_option('daemon_tests')
   add_project_arguments ('-DPK_ENABLE_DAEMON_TESTS=1', language: 'c')
 endif
 
-if dependency('ply-boot-client', version: '>=0.9.5', required: false).found()
-  add_project_arguments ('-DPLYMOUTH_0_9_5=1', language: 'c')
-endif
-
 # Ensure functions like realpath(3) and other "default" functions are available
 add_project_arguments ('-D_DEFAULT_SOURCE', language: 'c')
 
