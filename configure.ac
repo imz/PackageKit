@@ -408,11 +408,11 @@ AC_ARG_ENABLE([scripts],
 	      AC_HELP_STRING(--enable-scripts, enable the extension system for aptcc),
 	      [enable_scripts="$enableval"],[enable_scripts="no"])
 if test "$enable_scripts" != "no"; then
-  AC_MSG_RESULT(no)
+  AC_MSG_RESULT(yes)
   AC_DEFINE(WITH_LUA, 1,
 	    [Define if you want to enable the extension system for aptcc.])
 else
-  AC_MSG_RESULT(yes)
+  AC_MSG_RESULT(no)
 fi
 AM_CONDITIONAL(WITH_LUA, test "$enable_scripts" != "no")
 
