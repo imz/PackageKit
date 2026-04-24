@@ -303,10 +303,13 @@ Immediately test PackageKit when installing this package.
 
 
 %changelog
-* Sun Feb  8 2026 Ivan Zakharyaschev <imz@altlinux.org> 1.2.5.0.0.30-alt3.p10.1
+* Tue May 19 2026 Ivan Zakharyaschev <imz@altlinux.org> 1.2.5.0.0.30-alt3.p10.1
   (A conservative update for p10.)
 - Made more flexible in the prerequisites' versions that it can be compiled
   with. (With newer appstream.)
+
+* Fri Apr 24 2026 Alexander Danilov <admsasha@altlinux.org> 1.2.5-alt7.c10f2.3
+- Applied security fixes from upstream (Fixes: CVE-2026-41651).
 
 * Wed Apr 09 2025 Alexander Danilov <admsasha@altlinux.org> 1.2.5-alt7.c10f2.2
 - Applied security fixes from upstream (Fixes: CVE-2024-0217).
